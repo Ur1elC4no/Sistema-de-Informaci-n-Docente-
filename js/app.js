@@ -72,6 +72,9 @@ var ICONOS={
  docs:ico('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>')
 };
 
+/* Iniciales para el avatar del usuario (ignora palabras cortas como "de" o "y") */
+function iniciales(n){return String(n).split(/\s+/).filter(function(w){return w.length>2}).slice(0,2).map(function(w){return w[0]}).join('').toUpperCase()}
+var SALIR=ico('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>');
 /* Estructura general con sesión iniciada: barra lateral izquierda (logo, menú, usuario) + contenido.
    nav = lista de [vista, texto] que cambia según el rol. */
 function shell(nav,body){
@@ -79,7 +82,8 @@ function shell(nav,body){
   return '<div class="app"><aside class="side"><div class="brand">'+crest()+'<div><div class="sname">Instituto Tecnológico</div><div class="ssub">Investigación docente</div></div></div>'+
   '<nav class="snav" aria-label="Principal">'+nav.map(function(n){return '<button data-act="nav" data-v="'+n[0]+'"'+(S.view===n[0]&&!S.sec&&!S.detail?' aria-current="page"':'')+'>'+ICONOS[n[0]]+'<span>'+n[1]+'</span></button>'}).join('')+'</nav>'+
   '<div class="deco"><img src="recursos/decoracion.png" alt=""></div>'+
-  '<div class="sfoot"><span><b>'+esc(u.name)+'</b>'+(u.label.toLowerCase()!==u.name.toLowerCase()?'<small>'+esc(u.label)+'</small>':'')+'</span><button class="btn sm side-btn" data-act="logout">Salir</button></div></aside>'+
+  '<div class="sfoot"><div class="who"><i class="avatar" aria-hidden="true">'+iniciales(u.name)+'</i><span><b>'+esc(u.name)+'</b>'+(u.label.toLowerCase()!==u.name.toLowerCase()?'<small>'+esc(u.label)+'</small>':'')+'</span></div>'+
+  '<button class="btn sm side-btn" data-act="logout">'+SALIR+'<span>Cerrar sesión</span></button></div></aside>'+
   '<main class="main">'+body+'</main></div>';
 }
 var BELL='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
@@ -94,7 +98,7 @@ function hero(t,tag,bell){
 /* ---------- Inicio de sesión ---------- */
 /* Pantalla de inicio de sesión (V1) */
 function renderLogin(){
-  return '<div class="login"><section class="login-l"><div>'+crest()+'<div class="ssub">Instituto Tecnológico</div></div>'+
+  return '<div class="login"><section class="login-l"><span class="ring" aria-hidden="true"></span><div>'+crest()+'<div class="ssub">Instituto Tecnológico</div></div>'+
   '<div class="stack"><h1>Sistema de información docente</h1><ul>'+
   '<li>Captura tu perfil por apartados y sube tus evidencias en PDF.</li>'+
   '<li>La jefatura revisa cada documento y lo valida o lo devuelve con observaciones.</li>'+
@@ -105,8 +109,8 @@ function renderLogin(){
   '<div><label for="u">Usuario</label><input type="email" id="u" required placeholder="usuario@itc.mx"></div>'+
   '<div><label for="pw">Contraseña</label><input type="password" id="pw" required></div>'+
   '<button class="btn primary" type="submit">Entrar</button>'+
-  '<div class="demo"><b>Cuentas de prueba</b><span class="muted">Contraseña de todas: 1234</span><div class="btns">'+
-  USERS.map(function(u,i){return '<button type="button" class="btn sm" data-act="fill" data-i="'+i+'">'+u.label+'</button>'}).join('')+
+  '<div class="demo"><div class="demo-h"><b>Cuentas de prueba</b><span class="chip">Contraseña: 1234</span></div><div class="accts">'+
+  USERS.map(function(u,i){return '<button type="button" class="acct" data-act="fill" data-i="'+i+'"><span class="av">'+ICONOS[u.role==='prof'?'perfil':u.jef==='Investigación'?'panel':u.jef==='Docencia'?'docs':'consulta']+'</span><span class="ai"><b>'+u.label+'</b><small>'+u.email.split('@')[0]+'</small></span></button>'}).join('')+
   '</div></div></form></section></div>';
 }
 
@@ -264,6 +268,23 @@ function validView(){
   return hero('Validación','Compara el PDF con lo capturado y valida o rechaza.')+'<div style="height:22px"></div><div class="split">'+left+right+'</div>';
 }
 
+/* ---------- Animaciones (nuevo) ---------- */
+/* Las cifras del resumen "cuentan" desde 0 hasta su valor */
+function animaCifras(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  document.querySelectorAll('.stat b').forEach(function(el){
+    var txt=el.textContent,fin=parseInt(txt,10);if(isNaN(fin)||fin===0)return;
+    var pad=txt.length>String(fin).length,t0=null,dur=900;
+    function paso(t){if(!t0)t0=t;var k=Math.min((t-t0)/dur,1),e=1-Math.pow(1-k,3),v=Math.round(fin*e);
+      el.textContent=(pad&&v<10?'0':'')+v;if(k<1)requestAnimationFrame(paso)}
+    el.textContent=pad?'00':'0';requestAnimationFrame(paso);
+  });
+}
+/* Las filas de las tablas aparecen una tras otra */
+function escalona(){
+  document.querySelectorAll('tbody tr').forEach(function(tr,i){tr.style.animationDelay=Math.min(i*40,480)+'ms'});
+}
+
 /* ---------- Render ---------- */
 /* Dibuja la pantalla según quién inició sesión y la vista actual.
    Se llama cada vez que cambia el estado S. */
@@ -277,6 +298,8 @@ function render(){
     h=shell([['panel','Resumen'],['consulta','Directorio'],['valid','Validación'],['reportes','Reportes']],b);
   }
   $('#app').innerHTML=h;
+  animaCifras();
+  escalona();
   var m='';
   if(S.preview){var d=DOCS.filter(function(x){return x.id===S.preview})[0];
     m='<div class="modal" data-act="closeView"><div class="card stack" role="dialog" aria-label="Vista del PDF"><div style="display:flex;justify-content:space-between;gap:10px"><h3>'+esc(d.file)+'</h3><button class="btn sm" data-act="closeView">Cerrar</button></div><div class="pdf"><div><b>Vista previa del PDF</b>'+esc(docTitle(d))+'. En el sistema real se abre aquí el archivo guardado en el servidor.</div></div></div></div>'}
@@ -289,7 +312,8 @@ document.addEventListener('click',function(e){
   var el=e.target.closest('[data-act]');if(!el)return;
   var a=el.dataset.act,id=+el.dataset.id;
   if(a==='closeView'){if(el.classList.contains('modal')&&!e.target.matches('.modal'))return;S.preview=null;render();return}
-  if(a==='fill'){var u=USERS[+el.dataset.i];$('#u').value=u.email;$('#pw').value=u.pass;return}
+  if(a==='fill'){var u=USERS[+el.dataset.i];$('#u').value=u.email;$('#pw').value=u.pass;
+    document.querySelectorAll('.acct').forEach(function(x){x.classList.toggle('on',x===el)});$('#pw').focus();return}
   if(a==='logout'){S.user=null;S.view='login';S.sec=null;S.detail=null;S.rev=null;render();return}
   if(a==='nav'){S.rev=null;go(el.dataset.v);return}
   if(a==='sec'){S.sec=el.dataset.id;S.edit=null;S.err='';S.fileOk=null;render();window.scrollTo(0,0);return}
