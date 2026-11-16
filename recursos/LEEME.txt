@@ -1,0 +1,14 @@
+CARPETA DE RECURSOS
+===================
+Aquí van las imágenes del sistema. El código ya las busca con estos nombres:
+
+  logo.png          Logo de la institución (se ve en la barra lateral y en el inicio de sesión).
+                    Recomendado: PNG con fondo transparente y trazo blanco, cuadrado, mínimo 400 x 400 px.
+                    Si no existe, el sistema muestra un círculo con las siglas "SID".
+
+  decoracion.png    (Opcional) Ilustración de línea para la parte baja de la barra lateral,
+                    como el perfil en líneas finas de la referencia. Trazo blanco, fondo transparente.
+                    Si no existe, simplemente no se muestra.
+
+Para cambiar los nombres o agregar más imágenes, edita las rutas en js/app.js
+(busca "recursos/").
